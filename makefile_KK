@@ -1,0 +1,14 @@
+CC=g++
+CFLAGS=-c -O2 -Wall -Wextra -Wno-unused-parameter -Ic:/usr/include/gsl/ -Wc++11-extensions -Ic:/usr/include/boost/
+LIBS=-lm -lboost_system -lboost_filesystem
+SOURCES=KK_analysis.cpp
+OBJECTS=$(SOURCES:.c=.o)
+EXECUTABLE=KK_analysis_exe
+
+all: $(SOURCES) $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LIBS) -o $@
+
+.c.o:
+	$(CC) $(CFLAGS) $< -o $@

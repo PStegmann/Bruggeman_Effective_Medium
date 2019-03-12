@@ -255,9 +255,12 @@ private:
           alpha[ii] = t;
       complex<double> numerator(0.,0.);
       complex<double> denominator(0.,0.);
-      for (size_t kk = 0; kk < 7; kk++)
+      for (size_t kk = 1; kk < 7; kk++)
       {
         numerator += composition[kk]*(ind[kk]-x)/(ind[kk]+2.*x);
+      }
+      for (size_t kk = 0; kk < 7; kk++)
+      {
         denominator += composition[kk]*alpha[kk]*ind[kk]/((ind[kk]+2.*x)*(ind[kk]+2.*x));
       }
       dxdt = 1./3.*numerator/denominator;

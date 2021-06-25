@@ -69,6 +69,7 @@
 #include <boost/numeric/odeint.hpp> /* ODE integrator for Bruggeman solver */
 #include <boost/filesystem.hpp> // filesystem access
 #include <boost/assign/std/vector.hpp>
+#include <omp.h>
 
 // MINERAL database
 #include "WeNeedMoreMinerals.h"
@@ -403,8 +404,8 @@ int main ( int argc, char *argv[] )
 	{
 		// Requesting refractive index:
 		get_index get_index_now;
-		complex<double> index_holder(1,1);
-    
+		//complex<double> index_holder(1,1);
+
     std::ifstream size_source;
     std::vector<double> size_vector;
     size_source.open("./size_bin.dat", std::ios_base::in);  // open data
@@ -417,7 +418,7 @@ int main ( int argc, char *argv[] )
       size_t counter = 1;
       for (std::string line; getline(size_source,line); ) // read stream line by line
       {
-        if(counter > 1) // stream also reads bullshit lines at the beginning and end.
+        if(counter > 0) // stream also reads header lines at the beginning and end.
         {
           std::istringstream in(line);    // make a stream for the line itself
 
@@ -445,20 +446,33 @@ int main ( int argc, char *argv[] )
       boost::filesystem::path workingDirectory ( boost::filesystem::current_path() );
       boost::filesystem::create_directories( outputPath, returnedError );
       boost::filesystem::current_path(outputPath);
-  		// Refractive index output:
-  		if (debug) cout << "Compound refractive index: " << index_holder << endl; // output needs to be different from (1,1).
   		ofstream output_file_real;
       ofstream output_file_imag;
   		output_file_real.open ("refrindex_real.txt");
       output_file_imag.open ("refrindex_imag.txt");
       boost::filesystem::current_path(workingDirectory);
-      for (size_t iii = 0; iii < 1500; iii++) 
+      // Frequency loop:
+      size_t iii;
+      std::valarray<complex<double> > index_array(1500);
+      omp_set_num_threads(2);
+#pragma omp parallel for private(iii)
+      for (iii = 0; iii < 1500; iii++) 
       {
+// #pragma omp critical 
         //index_holder = get_index_now((0.1+0.1*iii),atof(argv[2]));
-        index_holder = get_index_now((0.1+0.1*iii),*it);
-        output_file_real << index_holder.real() << endl;
-        output_file_imag << index_holder.imag() << endl;
-        std::cout << iii << std::endl;
+        index_array[iii] = get_index_now((0.1+0.1*iii),*it);
+        // Refractive index output:
+        if (debug) 
+        {
+          // output needs to be different from (1,1)
+          cout << "Compound refractive index: " << index_array[iii] << endl; 
+          std::cout << iii << " tid = " << omp_get_thread_num() << std::endl;
+        }
+      }
+      for (size_t ii = 0; ii < 1500; ii++) 
+      {
+        output_file_real << index_array[ii].real() << endl;
+        output_file_imag << index_array[ii].imag() << endl;
       }
   		output_file_real.close();
       output_file_imag.close();
